@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayScan Pro – AI Salary Scanner (Free)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1117;--s1:#1a1d27;--s2:#22263a;--s3:#2a2e45;
+  --b1:#2e3454;--b2:#3d4266;
+  --ac:#4f8ef7;--ac2:#6366f1;--gn:#22c55e;--or:#f59e0b;--rd:#ef4444;--pu:#a855f7;
+  --t1:#e8eaf0;--t2:#9096b4;--t3:#5a607a;
+  --r:12px;--rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;}
+
+/* Header */
+.hdr{background:linear-gradient(135deg,#1a1f35,#0f1420);border-bottom:1px solid var(--b1);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:-.3px;}
+.logo-text span{color:var(--ac);}
+.badges{display:flex;gap:6px;}
+.badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.4px;}
+.bg-free{background:rgba(34,197,94,.12);color:var(--gn);border:1px solid rgba(34,197,94,.25);}
+.bg-ai{background:rgba(79,142,247,.12);color:var(--ac);border:1px solid rgba(79,142,247,.25);}
+.hdr-stats{display:flex;gap:8px;}
+.hs{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:5px 12px;text-align:center;}
+.hs-val{font-size:13px;font-weight:700;display:block;}
+.hs-lbl{font-size:9px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+
+/* Main */
+.main{max-width:1400px;margin:0 auto;padding:20px;}
+
+/* API Setup */
+.api-setup{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 20px;margin-bottom:16px;}
+.api-setup h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.api-setup h3::before{content:'';width:3px;height:12px;background:var(--ac);border-radius:2px;}
+.api-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.api-input{flex:1;min-width:280px;background:var(--s2);border:1px solid var(--b1);color:var(--t1);border-radius:var(--rs);padding:8px 12px;font-size:12px;font-family:'DM Mono',monospace;}
+.api-input:focus{outline:none;border-color:var(--ac);}
+.api-status{font-size:11px;padding:4px 10px;border-radius:20px;display:none;}
+.api-ok{background:rgba(34,197,94,.12);color:var(--gn);border:1px solid rgba(34,197,94,.25);}
+.api-err{background:rgba(239,68,68,.12);color:var(--rd);border:1px solid rgba(239,68,68,.25);}
+.api-hint{font-size:11px;color:var(--t3);margin-top:8px;line-height:1.7;}
+.api-hint a{color:var(--ac);text-decoration:none;}
+.api-hint a:hover{text-decoration:underline;}
+
+/* Layout grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:700px){.grid2{grid-template-columns:1fr;}}
+
+/* Card */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px;}
+.ct{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.ct::before{content:'';width:3px;height:12px;background:var(--ac);border-radius:2px;}
+
+/* Upload */
+.up{border:2px dashed var(--b2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:transparent;position:relative;overflow:hidden;}
+.up::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(79,142,247,.06),transparent 60%);pointer-events:none;}
+.up:hover,.up.drag{border-color:var(--ac);background:rgba(79,142,247,.04);}
+.up-ico{font-size:32px;margin-bottom:10px;}
+.up h2{font-size:14px;font-weight:600;margin-bottom:5px;}
+.up p{font-size:11px;color:var(--t2);line-height:1.6;}
+.fmt-row{display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap;}
+.fmt{background:var(--s2);border:1px solid var(--b1);border-radius:20px;padding:2px 9px;font-size:9px;font-weight:700;color:var(--t2);letter-spacing:.3px;}
+
+/* File list */
+.fi-list{max-height:160px;overflow-y:auto;}
+.fi{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--b1);font-size:11px;}
+.fi:last-child{border-bottom:none;}
+.dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.dw{background:var(--s3);color:var(--t3);}
+.dp{background:rgba(245,158,11,.15);color:var(--or);animation:bl 1s infinite;}
+.dd{background:rgba(34,197,94,.15);color:var(--gn);}
+.de{background:rgba(239,68,68,.15);color:var(--rd);}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Buttons */
+.brow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.btn{padding:8px 16px;border-radius:var(--rs);border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;gap:5px;letter-spacing:.2px;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn:active:not(:disabled){transform:scale(.97);}
+.b-p{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;}
+.b-p:hover:not(:disabled){filter:brightness(1.1);}
+.b-g{background:rgba(34,197,94,.12);color:var(--gn);border:1px solid rgba(34,197,94,.25);}
+.b-g:hover:not(:disabled){background:rgba(34,197,94,.2);}
+.b-o{background:rgba(245,158,11,.12);color:var(--or);border:1px solid rgba(245,158,11,.25);}
+.b-o:hover:not(:disabled){background:rgba(245,158,11,.2);}
+.b-ghost{background:var(--s2);color:var(--t2);border:1px solid var(--b1);}
+.b-ghost:hover:not(:disabled){background:var(--s3);color:var(--t1);}
+.b-rd{background:rgba(239,68,68,.12);color:var(--rd);border:1px solid rgba(239,68,68,.25);}
+.b-rd:hover:not(:disabled){background:rgba(239,68,68,.2);}
+
+/* Progress */
+.pb{background:var(--s2);border-radius:4px;height:5px;display:none;overflow:hidden;margin-bottom:10px;}
+.pf{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .4s;}
+.pf::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:shine 1.5s infinite;}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+/* Log */
+.log{background:#070a0f;border:1px solid var(--b1);border-radius:var(--rs);padding:10px 12px;font-size:10px;font-family:'DM Mono',monospace;max-height:120px;overflow-y:auto;display:none;line-height:1.8;}
+.err{color:#ff7b72;}.ok{color:#56d364;}.info{color:#79c0ff;}.warn{color:#e3b341;}
+
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.sc{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;position:relative;overflow:hidden;}
+.sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.sc-bl::after{background:linear-gradient(90deg,var(--ac),var(--ac2));}
+.sc-rd::after{background:linear(90deg,var(--or),var(--rd));}
+.sc-rd::after{background:var(--rd);}
+.sc-gn::after{background:var(--gn);}
+.sc-pu::after{background:var(--pu);}
+.sc-or::after{background:var(--or);}
+.sc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);margin-bottom:6px;}
+.sc-val{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;}
+.sc-bl .sc-val{color:var(--ac);}
+.sc-rd .sc-val{color:var(--rd);}
+.sc-gn .sc-val{color:var(--gn);}
+.sc-pu .sc-val{color:var(--pu);}
+.sc-or .sc-val{color:var(--or);}
+.sc-sub{font-size:9px;color:var(--t3);margin-top:4px;}
+
+/* Employee */
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:16px;}
+.ef{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:9px 12px;}
+.ef-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);margin-bottom:3px;}
+.ef-val{font-size:12px;font-weight:600;color:var(--t1);}
+
+/* Tabs */
+.tabs{display:flex;gap:3px;background:var(--s2);border-radius:var(--rs);padding:3px;width:fit-content;margin-bottom:16px;}
+.tab{padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--t2);border:none;background:transparent;font-family:'DM Sans',sans-serif;transition:.2s;}
+.tab.active{background:var(--s3);color:var(--t1);}
+.tc{display:none;}.tc.active{display:block;}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{padding:8px 7px;white-space:nowrap;text-align:center;font-size:9px;font-weight:700;letter-spacing:.4px;border-bottom:1px solid var(--b1);}
+.thm{background:var(--s2);color:var(--t2);}
+.the{background:rgba(79,142,247,.1);color:var(--ac);}
+.thd{background:rgba(249,115,22,.1);color:var(--or);}
+.thn{background:rgba(34,197,94,.1);color:var(--gn);}
+.thg{background:rgba(79,142,247,.15);color:#7eb8ff;}
+.tht{background:rgba(249,115,22,.15);color:#ffb26b;}
+td{padding:7px 8px;border-bottom:1px solid var(--b1);text-align:right;white-space:nowrap;color:var(--t2);transition:background .1s;}
+td.m{text-align:left;font-weight:600;color:var(--t1);background:var(--s2);min-width:120px;}
+td.editable{cursor:pointer;}
+td.editable:hover{background:rgba(79,142,247,.08)!important;color:var(--ac)!important;}
+td input.ce{width:80px;background:var(--s3);border:1px solid var(--ac);color:var(--t1);border-radius:4px;padding:2px 5px;font-size:10px;font-family:'DM Mono',monospace;text-align:right;}
+tr:hover td{background:rgba(255,255,255,.02);}
+tr:hover td.m{background:rgba(79,142,247,.08);}
+tr.tot td{background:rgba(79,142,247,.07);font-weight:700;color:var(--t1);border-top:1px solid var(--ac);}
+tr.tot td.m{background:rgba(79,142,247,.14);color:var(--ac);}
+.vg{color:var(--ac)!important;font-weight:700;}
+.vd{color:var(--or)!important;font-weight:700;}
+.vn{color:var(--gn)!important;font-weight:700;}
+.z{color:var(--t3)!important;}
+
+/* Charts */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;}
+.cc{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:16px;}
+.cc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:12px;}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:var(--rs);font-size:11px;font-weight:700;z-index:999;transform:translateY(70px);transition:transform .3s;display:flex;align-items:center;gap:6px;border:1px solid;}
+.toast.show{transform:translateY(0);}
+.tok{background:rgba(5,20,5,.95);border-color:var(--gn);color:var(--gn);}
+.terr{background:rgba(20,5,5,.95);border-color:var(--rd);color:var(--rd);}
+.tinfo{background:rgba(5,10,25,.95);border-color:var(--ac);color:var(--ac);}
+
+/* Empty */
+.empty{text-align:center;padding:40px;color:var(--t3);font-size:12px;}
+
+/* GitHub deploy info */
+.deploy-box{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;}
+.deploy-box h4{font-size:11px;font-weight:700;color:var(--ac);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.deploy-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;}
+.ds{background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);padding:10px 12px;font-size:11px;color:var(--t2);line-height:1.7;}
+.ds b{color:var(--t1);display:block;margin-bottom:3px;}
+.ds code{background:var(--s3);padding:1px 5px;border-radius:3px;font-size:10px;font-family:'DM Mono',monospace;color:var(--ac);}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--s1);}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-icon">&#128202;</div>
+    <div class="logo-text">Pay<span>Scan</span> Pro</div>
+    <div class="badges">
+      <span class="badge bg-free">FREE</span>
+      <span class="badge bg-ai">Gemini AI</span>
+    </div>
+  </div>
+  <div class="hdr-stats">
+    <div class="hs"><span class="hs-val" id="h-slips">0</span><span class="hs-lbl">Slips</span></div>
+    <div class="hs"><span class="hs-val" id="h-net">—</span><span class="hs-lbl">Total Net</span></div>
+    <div class="hs"><span class="hs-val" id="h-tax">—</span><span class="hs-lbl">Tax Paid</span></div>
+    <div class="hs"><span class="hs-val" id="h-calls">0</span><span class="hs-lbl">API Calls</span></div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- GitHub Deploy Info -->
+<div class="deploy-box" id="deployBox">
+  <h4>&#128273; How to Get Your FREE Gemini API Key (2 minutes)</h4>
+  <div class="deploy-steps">
+    <div class="ds"><b>Step 1 — Open AI Studio</b>Go to <code>aistudio.google.com</code> in your browser</div>
+    <div class="ds"><b>Step 2 — Sign In</b>Click <code>Sign in</code> → use your Gmail account → Accept terms</div>
+    <div class="ds"><b>Step 3 — Get API Key</b>Click <code>Get API Key</code> in the left sidebar → Click <code>Create API Key</code></div>
+    <div class="ds"><b>Step 4 — Copy Key</b>Click "Copy key" button — key starts with AIzaSy... or AQ.Ab8... (both are valid)</div>
+    <div class="ds"><b>Step 5 — Paste Below</b>Paste in the field below → Click Save → Click Test Connection</div>
+    <div class="ds"><b>GitHub Pages</b>Save file as <code>index.html</code> → GitHub repo → Settings → Pages → Deploy</div>
+  </div>
+  <div style="margin-top:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;font-size:11px;color:#ff9999;line-height:1.8;">
+    <b>&#9888; Common Errors:</b><br>
+    &#10007; Key doesn't start with <code>AIzaSy</code> → Wrong key, regenerate at aistudio.google.com<br>
+    &#10007; <code>403 Forbidden</code> → Gemini API not enabled → Go to <code>console.cloud.google.com</code> → Enable "Generative Language API"<br>
+    &#10007; <code>429 Rate Limit</code> → Too many requests → Wait 1 minute (Free: 15/min, 500/day)<br>
+    &#10007; <code>CORS error</code> → Open app from a web server, not double-clicking the file
+  </div>
+  <button class="btn b-ghost" onclick="document.getElementById('deployBox').style.display='none'" style="margin-top:8px;font-size:10px;padding:4px 10px">&#10005; Hide Guide</button>
+</div>
+
+<!-- API Setup -->
+<div class="api-setup">
+  <h3>&#128273; Gemini API Key (Free)</h3>
+  <div class="api-row">
+    <input type="password" class="api-input" id="gemKey" placeholder="Paste your Gemini API key (AIzaSy... or AQ.Ab8...)">
+    <button class="btn b-ghost" onclick="saveKey()">&#128190; Save</button>
+    <button class="btn b-ghost" onclick="testKey()" id="testBtn">&#9654; Test</button>
+    <span class="api-status" id="apiStatus"></span>
+  </div>
+  <div class="api-hint">
+    Get FREE key: <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> → Sign in → Get API Key → Create API key → Copy key
+    &nbsp;&bull;&nbsp; Supports both formats: <code style="background:var(--s3);padding:1px 5px;border-radius:3px;font-family:monospace;color:var(--ac)">AIzaSy...</code> or new <code style="background:var(--s3);padding:1px 5px;border-radius:3px;font-family:monospace;color:var(--ac)">AQ.Ab8...</code>
+    &nbsp;&bull;&nbsp; Free: <b>500 req/day</b> &bull; No credit card
+    &nbsp;&bull;&nbsp; ⚠️ App must be hosted on GitHub Pages (https://) — API blocked on local file://
+  </div>
+</div>
+
+<!-- Upload + File Queue -->
+<div class="grid2">
+  <div>
+    <div class="up" id="dz" onclick="document.getElementById('fi').click()"
+         ondragover="dv(event,1)" ondragleave="dv(event,0)" ondrop="dp(event)">
+      <input type="file" id="fi" multiple accept=".pdf,.png,.jpg,.jpeg" onchange="addFiles(this.files)" style="display:none">
+      <div class="up-ico">&#128196;</div>
+      <h2>Drop Salary Slips Here</h2>
+      <p>PDF &bull; PNG &bull; JPG — Any format<br>Gemini AI reads and understands every field</p>
+      <div class="fmt-row">
+        <span class="fmt">PCDA ARMY</span>
+        <span class="fmt">SCHOOL</span>
+        <span class="fmt">PRIVATE</span>
+        <span class="fmt">BANK</span>
+        <span class="fmt">ANY FORMAT</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">File Queue &mdash; <span id="fcnt" style="color:var(--ac)">0</span> files</div>
+    <div class="fi-list" id="fitems">
+      <div class="empty" style="padding:16px">Drop salary PDFs above</div>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:var(--t3)"><span id="fsize">0 KB</span> total &bull; All processing is local</div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="brow">
+    <button class="btn b-p"     id="scanBtn" onclick="startScan()" disabled>&#9889; Scan with Gemini AI</button>
+    <button class="btn b-g"     id="dlBtn"   onclick="dlExcel()" disabled>&#128229; Excel</button>
+    <button class="btn b-ghost" id="dlCsv"   onclick="dlCsv()" disabled>&#128200; CSV</button>
+    <button class="btn b-o"     id="editBtn" onclick="toggleEdit()" disabled>&#9998; Edit Mode</button>
+    <button class="btn b-ghost" onclick="loadSaved()" id="loadBtn">&#128190; Load Saved</button>
+    <button class="btn b-rd"    onclick="clearAll()">&#128465; Clear</button>
+  </div>
+  <div class="pb" id="pb"><div class="pf" id="pf" style="width:0%;position:relative;"></div></div>
+  <div class="log" id="log"></div>
+  <div style="margin-top:6px;font-size:10px;color:var(--t3)" id="editHint" style="display:none"></div>
+</div>
+
+<!-- Results -->
+<div id="resultsCard" style="display:none;">
+
+  <!-- Employee Details -->
+  <div class="emp-grid" id="empGrid" style="display:none;"></div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Tabs -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('table')">&#128202; Table</button>
+      <button class="tab" onclick="switchTab('charts')">&#128201; Charts</button>
+      <button class="tab" onclick="switchTab('raw')">&#128196; Raw</button>
+    </div>
+
+    <!-- Table -->
+    <div class="tc active" id="tc-table">
+      <div class="tbl-wrap" id="tbl"><div class="empty">Scan PDFs first</div></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="tc" id="tc-charts">
+      <div class="charts-grid">
+        <div class="cc"><div class="cc-title">Monthly Net Pay</div><canvas id="cNet" height="180"></canvas></div>
+        <div class="cc"><div class="cc-title">Gross vs Deductions</div><canvas id="cBar" height="180"></canvas></div>
+        <div class="cc"><div class="cc-title">Deductions Breakdown</div><canvas id="cDed" height="180"></canvas></div>
+        <div class="cc"><div class="cc-title">Earnings Breakdown</div><canvas id="cEarn" height="180"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Raw -->
+    <div class="tc" id="tc-raw">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="rawBtns"></div>
+      <div id="rawOut" style="background:#070a0f;border:1px solid var(--b1);border-radius:var(--rs);padding:12px;font-size:10px;font-family:'DM Mono',monospace;white-space:pre-wrap;max-height:400px;overflow-y:auto;color:var(--t2);line-height:1.9;"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+<div class="toast" id="toast"></div>
+
+<script>
+if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='';
+
+// Try models in order - first one that works will be used
+const GEMINI_MODELS = ['gemini-2.5-flash','gemini-1.5-flash','gemini-1.5-flash-latest','gemini-pro-vision','gemini-1.0-pro-vision-latest'];
+let GEMINI_MODEL = 'gemini-1.5-flash'; // will be auto-detected
+const STORAGE_KEY  = 'payscan_pro_v3';
+let files=[], results=[], rawData={}, allEC=[], allDC=[], empInfo={}, editMode=false, apiCallCount=0;
+
+// ── Key management ───────────────────────────────────────────────────────────
+function getKey(){ return document.getElementById('gemKey').value.trim(); }
+function saveKey(){
+  const k=getKey();
+  if(!k){toast('Paste your Gemini API key!','terr');return;}
+  localStorage.setItem('gk',k);
+  toast('Key saved!','tok');
+}
+window.onload=()=>{
+  const k=localStorage.getItem('gk');
+  if(k) document.getElementById('gemKey').value=k;
+  const saved=localStorage.getItem(STORAGE_KEY);
+  if(saved) try{const p=JSON.parse(saved);if(p.results?.length){document.getElementById('loadBtn').style.color='var(--gn)';}}catch(e){}
+};
+
+async function testKey(){
+  const k=getKey();
+  if(!k){toast('Paste your API key first!','terr');return;}
+  if(!k||k.length<10){
+    const st=document.getElementById('apiStatus');
+    st.style.display='inline-block';st.className='api-status api-err';
+    st.textContent='✗ Key too short — copy full key';
+    toast('Paste the complete API key!','terr');return;
+  }
+  const st=document.getElementById('apiStatus');
+  st.style.display='inline-block';st.className='api-status';st.textContent='Testing all models...';
+  document.getElementById('testBtn').disabled=true;
+  try{
+    const r=await callGemini(k,'Say OK in one word',null);
+    st.className='api-status api-ok';st.textContent=`✓ Working! Model: ${GEMINI_MODEL}`;
+    toast('✓ API working with '+GEMINI_MODEL,'tok');
+    saveKey();
+  }catch(e){
+    st.className='api-status api-err';st.textContent='✗ '+e.message;
+    toast(e.message,'terr');
+  }
+  document.getElementById('testBtn').disabled=false;
+}
+
+// ── Gemini API call — supports both AIzaSy and new AQ. key formats ───────────
+async function callGemini(key, prompt, imageB64, mimeType='image/png'){
+  const parts=[{text:prompt}];
+  if(imageB64) parts.unshift({inline_data:{mime_type:mimeType,data:imageB64}});
+
+  const body=JSON.stringify({
+    contents:[{parts}],
+    generationConfig:{temperature:0,maxOutputTokens:2048}
+  });
+
+  const modelsToTry = imageB64
+    ? ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-flash-latest']
+    : ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-flash-latest'];
+
+  // New AQ. format uses Bearer token in Authorization header
+  // Old AIzaSy format uses ?key= query parameter
+  // Try both methods for maximum compatibility
+  const isNewFormat = key.startsWith('AQ.');
+
+  let lastError='';
+  for(const model of modelsToTry){
+    // Method 1: Bearer token (for new AQ. format)
+    // Method 2: Query param (for old AIzaSy format)
+    // Try both if needed
+    const attempts = isNewFormat
+      ? [
+          // New format: Bearer in header
+          {url:`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+           headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`}},
+          // Also try x-goog-api-key header
+          {url:`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+           headers:{'Content-Type':'application/json','x-goog-api-key':key}},
+        ]
+      : [
+          // Old format: key in URL
+          {url:`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+           headers:{'Content-Type':'application/json'}},
+          // Also try header method
+          {url:`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+           headers:{'Content-Type':'application/json','x-goog-api-key':key}},
+        ];
+
+    for(const attempt of attempts){
+      try{
+        const resp=await fetch(attempt.url,{method:'POST',headers:attempt.headers,body});
+
+        if(resp.status===404){
+          const e=await resp.json().catch(()=>({}));
+          lastError=e.error?.message||'Model not found'; break; // try next model
+        }
+        if(!resp.ok){
+          const e=await resp.json().catch(()=>({}));
+          const msg=e.error?.message||'HTTP '+resp.status;
+          if(resp.status===401) { lastError='Unauthorized: '+msg; continue; } // try next auth method
+          if(resp.status===403) throw new Error('403: Deploy app to GitHub Pages first (file:// blocks API calls)');
+          if(resp.status===429) throw new Error('Rate limit — wait 1 min. Free tier: 15 req/min');
+          if(resp.status===400&&msg.toLowerCase().includes('key')) throw new Error('Invalid key — copy full key from aistudio.google.com');
+          lastError=msg; continue;
+        }
+
+        const d=await resp.json();
+        const text=d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+        if(!text){ lastError='Empty response'; continue; }
+
+        GEMINI_MODEL=model;
+        apiCallCount++;
+        document.getElementById('h-calls').textContent=apiCallCount;
+        addLog(`  API: ${model} (${isNewFormat?'Bearer':'key param'} auth)`, 'info');
+        return text;
+
+      }catch(e){
+        if(e.message.includes('403')||e.message.includes('Rate limit')||e.message.includes('Invalid key')) throw e;
+        lastError=e.message;
+      }
+    }
+  }
+  throw new Error('All models failed. Last error: '+lastError+'. Make sure app is on https:// (GitHub Pages)');
+}
+
+// ── PDF → Canvas image → Base64 ──────────────────────────────────────────────
+async function pdfPageToBase64(file, pageNum=1){
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({
+    data:new Uint8Array(buf),disableWorker:true,disableFontFace:true
+  }).promise;
+  const page=await pdf.getPage(Math.min(pageNum,pdf.numPages));
+  const vp=page.getViewport({scale:2.0}); // higher scale = better OCR
+  const canvas=document.createElement('canvas');
+  canvas.width=vp.width;canvas.height=vp.height;
+  await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  return {
+    b64:canvas.toDataURL('image/png').split(',')[1],
+    numPages:pdf.numPages
+  };
+}
+
+async function imgFileToBase64(file){
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.readAsDataURL(file);
+  });
+}
+
+// ── Gemini extraction prompt ──────────────────────────────────────────────────
+const EXTRACT_PROMPT=`You are reading a salary slip image. Extract ALL data precisely.
+
+Return ONLY a valid JSON object. No markdown, no explanation. Just JSON.
+
+{
+  "employeeName": "",
+  "employeeId": "",
+  "acNo": "",
+  "pan": "",
+  "pfNo": "",
+  "designation": "",
+  "department": "",
+  "organization": "",
+  "month": "Month YYYY",
+  "payDays": 0,
+  "earnings": {
+    "FIELD_NAME": amount_as_number
+  },
+  "deductions": {
+    "FIELD_NAME": amount_as_number
+  },
+  "grossPay": 0,
+  "totalDeductions": 0,
+  "netPay": 0
+}
+
+RULES:
+- earnings{} = ALL items in the earnings/आय section with their exact label names as keys
+- deductions{} = ALL items in the deductions/कटौती section with their exact label names as keys
+- Use EXACT field names as shown in the slip (e.g. "BPAY", "BASIC", "HRA", "DA", "MSP", "CONVEYANCE", "PF", "ITAX", "DSOP", "AGIF" etc.)
+- amounts must be plain numbers without commas (e.g. 53600 not 53,600)
+- grossPay = the Gross Pay / कुल आय total
+- totalDeductions = the Total Deductions / कुल कटौती total
+- netPay = Net Remittance / Net Pay number
+- If a field is not visible, use "" for strings and 0 for numbers
+- Return ONLY the JSON object`;
+
+// ── Main scan ────────────────────────────────────────────────────────────────
+async function startScan(){
+  const k=getKey();
+  if(!k){toast('Enter Gemini API key first!','terr');return;}
+
+  results=[];rawData={};allEC=[];allDC=[];empInfo={};
+  document.getElementById('log').innerHTML='';
+  document.getElementById('pb').style.display='block';
+  document.getElementById('scanBtn').disabled=true;
+  document.getElementById('dlBtn').disabled=true;
+  document.getElementById('dlCsv').disabled=true;
+  document.getElementById('editBtn').disabled=true;
+  document.getElementById('resultsCard').style.display='none';
+  addLog('Starting Gemini AI scan...','info');
+
+  for(let i=0;i<files.length;i++){
+    setDot(i,'p');
+    setP((i/files.length)*100);
+    addLog(`[${i+1}/${files.length}] ${files[i].name}`,'info');
+    try{
+      let b64,mime='image/png';
+      if(files[i].type.startsWith('image/')){
+        b64=await imgFileToBase64(files[i]);
+        mime=files[i].type;
+        addLog('  Image file — sending to Gemini Vision');
+      } else {
+        addLog('  PDF → rendering page 1 to image...');
+        const r=await pdfPageToBase64(files[i],1);
+        b64=r.b64;
+        addLog(`  Image ready (${files[i].name}) — calling Gemini 1.5 Flash...`);
+      }
+
+      const raw=await callGemini(k,EXTRACT_PROMPT,b64,mime);
+      rawData[i]=raw;
+
+      // Parse JSON from response
+      const jsonStr=raw.match(/\{[\s\S]*\}/)?.[0];
+      if(!jsonStr) throw new Error('Gemini returned no JSON');
+      const data=JSON.parse(jsonStr);
+
+      // Normalise
+      const earn=data.earnings||{};
+      const ded=data.deductions||{};
+      // Remove zero/null values
+      Object.keys(earn).forEach(k=>{if(!earn[k])delete earn[k];});
+      Object.keys(ded).forEach(k=>{if(!ded[k])delete ded[k];});
+
+      const row={
+        month: data.month||files[i].name,
+        earn, ded,
+        grossPay: parseFloat(data.grossPay)||Object.values(earn).reduce((s,v)=>s+v,0),
+        totalDed: parseFloat(data.totalDeductions)||Object.values(ded).reduce((s,v)=>s+v,0),
+        netPay:   parseFloat(data.netPay)||0,
+        emp:{
+          name:data.employeeName,id:data.employeeId,ac:data.acNo,
+          pan:data.pan,pf:data.pfNo,desig:data.designation,
+          dept:data.department,org:data.organization,days:data.payDays
+        }
+      };
+      if(!row.netPay) row.netPay=row.grossPay-row.totalDed;
+      results.push(row);
+      if(!empInfo.name&&row.emp.name) empInfo={...row.emp};
+      Object.keys(earn).forEach(k=>{if(!allEC.includes(k))allEC.push(k);});
+      Object.keys(ded).forEach(k=>{if(!allDC.includes(k))allDC.push(k);});
+
+      setDot(i,'d');
+      addLog(`  ✓ ${row.month} | Earn: ${Object.keys(earn).join(',')} | Gross:${fmt(row.grossPay)} | Net:${fmt(row.netPay)}`,'ok');
+
+    }catch(e){
+      setDot(i,'e');
+      addLog(`  ✗ Error: ${e.message}`,'err');
+    }
+    // Rate limit: 15 RPM max on free tier
+    if(i<files.length-1) await sleep(1200);
+  }
+
+  setP(100);
+  addLog(`Complete: ${results.length}/${files.length} scanned (${apiCallCount} API calls used)`,'info');
+
+  // Sort FY order
+  const ord=['april','may','june','july','august','september','october','november','december','january','february','march'];
+  results.sort((a,b)=>{
+    const ai=ord.findIndex(m=>(a.month||'').toLowerCase().includes(m));
+    const bi=ord.findIndex(m=>(b.month||'').toLowerCase().includes(m));
+    return(ai<0?99:ai)-(bi<0?99:bi);
+  });
+
+  saveToLocal();
+  renderAll();
+  document.getElementById('dlBtn').disabled=results.length===0;
+  document.getElementById('dlCsv').disabled=results.length===0;
+  document.getElementById('editBtn').disabled=results.length===0;
+  document.getElementById('scanBtn').disabled=false;
+  if(results.length) toast(`${results.length} slips scanned!`,'tok');
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderAll(){
+  document.getElementById('resultsCard').style.display='block';
+  renderEmp();renderStats();renderTable();renderCharts();updateHeader();
+}
+
+function renderEmp(){
+  const d=empInfo;
+  const fields=[['Name',d.name],['Emp ID',d.id],['A/C No',d.ac],['PAN',d.pan],['PF No',d.pf],['Designation',d.desig],['Dept',d.dept],['Org',d.org]].filter(([,v])=>v);
+  const g=document.getElementById('empGrid');
+  if(!fields.length){g.style.display='none';return;}
+  g.style.display='grid';
+  g.innerHTML=fields.map(([l,v])=>`<div class="ef"><div class="ef-lbl">${l}</div><div class="ef-val">${v}</div></div>`).join('');
+}
+
+function renderStats(){
+  const tG=results.reduce((s,r)=>s+r.grossPay,0);
+  const tD=results.reduce((s,r)=>s+r.totalDed,0);
+  const tN=results.reduce((s,r)=>s+r.netPay,0);
+  const tDsop=results.reduce((s,r)=>s+(r.ded['DSOP']||0),0);
+  const tPF=results.reduce((s,r)=>s+(r.ded['PF']||r.ded['EPF']||r.ded['PROVIDENT FUND']||0),0);
+  const tTax=results.reduce((s,r)=>s+(r.ded['ITAX']||r.ded['TDS']||r.ded['INCOME TAX']||r.ded['IT']||0),0);
+  const avg=results.length?Math.round(tN/results.length):0;
+  let html=`
+    <div class="sc sc-bl"><div class="sc-lbl">Gross Pay</div><div class="sc-val">&#8377;${fmtL(tG)}</div><div class="sc-sub">${results.length} months</div></div>
+    <div class="sc sc-rd"><div class="sc-lbl">Deductions</div><div class="sc-val">&#8377;${fmtL(tD)}</div><div class="sc-sub">${tG?((tD/tG)*100).toFixed(1)+'% of gross':''}</div></div>
+    <div class="sc sc-gn"><div class="sc-lbl">Net Pay</div><div class="sc-val">&#8377;${fmtL(tN)}</div><div class="sc-sub">Avg &#8377;${fmtL(avg)}/mo</div></div>`;
+  if(tDsop) html+=`<div class="sc sc-pu"><div class="sc-lbl">DSOP</div><div class="sc-val">&#8377;${fmtL(tDsop)}</div></div>`;
+  if(tPF)   html+=`<div class="sc sc-pu"><div class="sc-lbl">Prov Fund</div><div class="sc-val">&#8377;${fmtL(tPF)}</div></div>`;
+  if(tTax)  html+=`<div class="sc sc-or"><div class="sc-lbl">Income Tax</div><div class="sc-val">&#8377;${fmtL(tTax)}</div></div>`;
+  document.getElementById('statsRow').innerHTML=html;
+}
+
+function renderTable(){
+  const ae=allEC.filter(k=>results.some(r=>r.earn[k]>0));
+  const ad=allDC.filter(k=>results.some(r=>r.ded[k]>0));
+  const edt=editMode;
+
+  let h=`<table><thead>
+  <tr>
+    <th class="thm" rowspan="2">Month</th>
+    <th class="the" colspan="${ae.length}">EARNINGS</th>
+    <th class="thg" rowspan="2">GROSS PAY</th>
+    <th class="thd" colspan="${ad.length}">DEDUCTIONS</th>
+    <th class="tht" rowspan="2">TOTAL DED.</th>
+    <th class="thn" rowspan="2">NET PAY</th>
+  </tr><tr>
+    ${ae.map(k=>`<th class="the">${k}</th>`).join('')}
+    ${ad.map(k=>`<th class="thd">${k}</th>`).join('')}
+  </tr></thead><tbody>`;
+
+  const te={},td={};
+  ae.forEach(k=>te[k]=results.reduce((s,r)=>s+(r.earn[k]||0),0));
+  ad.forEach(k=>td[k]=results.reduce((s,r)=>s+(r.ded[k]||0),0));
+
+  results.forEach((r,ri)=>{
+    h+=`<tr>
+      <td class="m">${r.month}</td>
+      ${ae.map(k=>`<td class="${edt?'editable':''} ${r.earn[k]?'':'z'}" onclick="${edt?`edt(event,${ri},'earn','${k}')`:''}">${r.earn[k]?fmt(r.earn[k]):'-'}</td>`).join('')}
+      <td class="vg">${fmt(r.grossPay)}</td>
+      ${ad.map(k=>`<td class="${edt?'editable':''} ${r.ded[k]?'':'z'}" onclick="${edt?`edt(event,${ri},'ded','${k}')`:''}">${r.ded[k]?fmt(r.ded[k]):'-'}</td>`).join('')}
+      <td class="vd">${fmt(r.totalDed)}</td>
+      <td class="vn">${fmt(r.netPay)}</td>
+    </tr>`;
+  });
+
+  const tG=results.reduce((s,r)=>s+r.grossPay,0);
+  const tD=results.reduce((s,r)=>s+r.totalDed,0);
+  const tN=results.reduce((s,r)=>s+r.netPay,0);
+  h+=`<tr class="tot">
+    <td class="m">TOTAL</td>
+    ${ae.map(k=>`<td>${te[k]?fmt(te[k]):'-'}</td>`).join('')}
+    <td class="vg">${fmt(tG)}</td>
+    ${ad.map(k=>`<td>${td[k]?fmt(td[k]):'-'}</td>`).join('')}
+    <td class="vd">${fmt(tD)}</td>
+    <td class="vn">${fmt(tN)}</td>
+  </tr></tbody></table>`;
+  document.getElementById('tbl').innerHTML=h;
+}
+
+function edt(e,ri,type,key){
+  if(!editMode)return;
+  const td=e.currentTarget;
+  const cur=results[ri][type][key]||0;
+  td.innerHTML=`<input class="ce" value="${cur}" onblur="saveEdt(this,${ri},'${type}','${key}')" onkeydown="if(event.key==='Enter')this.blur()">`;
+  td.querySelector('input').focus();td.querySelector('input').select();
+}
+function saveEdt(inp,ri,type,key){
+  const v=parseFloat(inp.value.replace(/,/g,''))||0;
+  results[ri][type][key]=v;
+  results[ri].grossPay=Object.values(results[ri].earn).reduce((s,x)=>s+x,0);
+  results[ri].totalDed=Object.values(results[ri].ded).reduce((s,x)=>s+x,0);
+  results[ri].netPay=results[ri].grossPay-results[ri].totalDed;
+  saveToLocal();renderTable();renderStats();renderCharts();updateHeader();
+}
+
+function toggleEdit(){
+  editMode=!editMode;
+  const btn=document.getElementById('editBtn');
+  const hint=document.getElementById('editHint');
+  btn.textContent=editMode?'✓ Done Editing':'✎ Edit Mode';
+  btn.className=editMode?'btn b-g':'btn b-o';
+  hint.textContent=editMode?'Edit mode ON — click any earnings/deduction cell to correct a value.':'';
+  renderTable();
+}
+
+// ── Charts ─────────────────────────────────────────────────────────────────
+const PAL=['#4f8ef7','#22c55e','#f59e0b','#a855f7','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#8b5cf6'];
+
+function renderCharts(){
+  const months=results.map(r=>r.month.replace(/\s\d{4}/,'').slice(0,5));
+  const nets=results.map(r=>r.netPay);
+  const gross=results.map(r=>r.grossPay);
+  const deds=results.map(r=>r.totalDed);
+
+  drawLine('cNet',months,nets,'#22c55e');
+  drawDualBar('cBar',months,gross,deds);
+
+  const dedTot={};allDC.forEach(k=>{const v=results.reduce((s,r)=>s+(r.ded[k]||0),0);if(v>0)dedTot[k]=v;});
+  drawDonut('cDed',Object.entries(dedTot));
+
+  const earnTot={};allEC.forEach(k=>{const v=results.reduce((s,r)=>s+(r.earn[k]||0),0);if(v>0)earnTot[k]=v;});
+  drawDonut('cEarn',Object.entries(earnTot));
+}
+
+function ctx2d(id){
+  const c=document.getElementById(id);
+  const W=c.parentElement.clientWidth-32||320,H=180;
+  c.width=W;c.height=H;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#070a0f';ctx.fillRect(0,0,W,H);
+  return{ctx,W,H};
+}
+
+function drawLine(id,labels,data,color){
+  const {ctx,W,H}=ctx2d(id);
+  const P={t:16,r:12,b:32,l:54};
+  const cW=W-P.l-P.r,cH=H-P.t-P.b;
+  const max=Math.max(...data,1);
+  ctx.strokeStyle='#1e2535';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=P.t+cH*(1-i/4);
+    ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+cW,y);ctx.stroke();
+    ctx.fillStyle='#5a607a';ctx.font='8px DM Mono,monospace';ctx.textAlign='right';
+    ctx.fillText(fmtL(max*i/4),P.l-4,y+3);
+  }
+  if(data.length>0){
+    const pts=data.map((v,i)=>({x:P.l+(data.length>1?cW*(i/(data.length-1)):cW/2),y:P.t+cH*(1-v/max)}));
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';
+    ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();
+    // area fill
+    ctx.fillStyle=color+'18';
+    ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x,P.t+cH);ctx.lineTo(pts[0].x,P.t+cH);ctx.closePath();ctx.fill();
+    // dots
+    pts.forEach((p,i)=>{
+      ctx.fillStyle=color;ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#9096b4';ctx.font='8px DM Sans,sans-serif';ctx.textAlign='center';
+      ctx.fillText(labels[i]||'',p.x,H-4);
+    });
+  }
+}
+
+function drawDualBar(id,labels,a,b){
+  const {ctx,W,H}=ctx2d(id);
+  const P={t:16,r:12,b:32,l:54};
+  const cW=W-P.l-P.r,cH=H-P.t-P.b;
+  const max=Math.max(...a,...b,1);
+  ctx.strokeStyle='#1e2535';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=P.t+cH*(1-i/4);ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+cW,y);ctx.stroke();}
+  const bw=Math.max(5,cW/labels.length*.3);
+  labels.forEach((lbl,i)=>{
+    const cx=P.l+cW*(i+.5)/labels.length;
+    ctx.fillStyle='#4f8ef7';ctx.fillRect(cx-bw-1,P.t+cH-cH*(a[i]/max),bw,cH*(a[i]/max));
+    ctx.fillStyle='#f59e0b';ctx.fillRect(cx+1,P.t+cH-cH*(b[i]/max),bw,cH*(b[i]/max));
+    ctx.fillStyle='#5a607a';ctx.font='7px DM Sans,sans-serif';ctx.textAlign='center';
+    ctx.fillText((lbl||'').slice(0,4),cx,H-4);
+  });
+  ctx.fillStyle='#4f8ef7';ctx.fillRect(P.l,4,8,7);ctx.fillStyle='#9096b4';ctx.font='8px DM Sans,sans-serif';ctx.textAlign='left';ctx.fillText('Gross',P.l+11,11);
+  ctx.fillStyle='#f59e0b';ctx.fillRect(P.l+55,4,8,7);ctx.fillText('Ded.',P.l+66,11);
+}
+
+function drawDonut(id,entries){
+  const {ctx,W,H}=ctx2d(id);
+  if(!entries.length){ctx.fillStyle='#5a607a';ctx.font='11px DM Sans,sans-serif';ctx.textAlign='center';ctx.fillText('No data',W/2,H/2);return;}
+  const R=Math.min(H*.42,W*.25);const cx=R+10;const cy=H/2;
+  const tot=entries.reduce((s,[,v])=>s+v,0);
+  let angle=-Math.PI/2;
+  entries.forEach(([,v],i)=>{
+    const sw=(v/tot)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,angle,angle+sw);ctx.closePath();
+    ctx.fillStyle=PAL[i%PAL.length];ctx.fill();
+    ctx.strokeStyle='#0f1117';ctx.lineWidth=2;ctx.stroke();
+    angle+=sw;
+  });
+  ctx.beginPath();ctx.arc(cx,cy,R*.55,0,Math.PI*2);ctx.fillStyle='#070a0f';ctx.fill();
+  // Legend
+  entries.slice(0,7).forEach(([k,v],i)=>{
+    const ly=14+i*22;
+    ctx.fillStyle=PAL[i%PAL.length];ctx.fillRect(cx+R+14,ly,9,9);
+    ctx.fillStyle='#9096b4';ctx.font='9px DM Sans,sans-serif';ctx.textAlign='left';ctx.fillText(k.slice(0,14),cx+R+26,ly+9);
+    ctx.fillStyle='#e8eaf0';ctx.font='bold 9px DM Mono,monospace';ctx.fillText('₹'+fmtL(v),cx+R+26,ly+20);
+  });
+}
+
+// ── Exports ───────────────────────────────────────────────────────────────────
+function getExportData(){
+  const ae=allEC.filter(k=>results.some(r=>r.earn[k]>0));
+  const ad=allDC.filter(k=>results.some(r=>r.ded[k]>0));
+  const name=empInfo.name||'Salary Statement';
+  const fy=getFY();
+  const title=[name,fy,empInfo.ac?'A/C: '+empInfo.ac:'',empInfo.id?'Emp: '+empInfo.id:'',empInfo.desig||''].filter(Boolean).join(' | ');
+  const hdr=['Month',...ae,'GROSS PAY',...ad,'TOTAL DED.','NET PAY'];
+  const rows=results.map(r=>[r.month,...ae.map(k=>r.earn[k]||0),r.grossPay,...ad.map(k=>r.ded[k]||0),r.totalDed,r.netPay]);
+  const te={},td={};ae.forEach(k=>te[k]=results.reduce((s,r)=>s+(r.earn[k]||0),0));ad.forEach(k=>td[k]=results.reduce((s,r)=>s+(r.ded[k]||0),0));
+  const tot=['TOTAL',...ae.map(k=>te[k]),results.reduce((s,r)=>s+r.grossPay,0),...ad.map(k=>td[k]),results.reduce((s,r)=>s+r.totalDed,0),results.reduce((s,r)=>s+r.netPay,0)];
+  return{title,hdr,rows,tot,name,fy};
+}
+function dlExcel(){
+  const{title,hdr,rows,tot,name,fy}=getExportData();
+  const ws=XLSX.utils.aoa_to_sheet([[title],[],hdr,...rows,[],tot]);
+  ws['!cols']=[{wch:18},...hdr.slice(1).map(()=>({wch:13}))];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Pay-Monthly');
+  XLSX.writeFile(wb,`Salary_${name.replace(/\s+/g,'_')}_${fy||'Statement'}.xlsx`);
+  toast('Excel downloaded!','tok');
+}
+function dlCsv(){
+  const{title,hdr,rows,tot}=getExportData();
+  const lines=[[title],[],hdr,...rows,[],tot].map(r=>r.map(v=>/,/.test(String(v))?`"${v}"`:v).join(','));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Salary_Statement.csv';a.click();
+  toast('CSV downloaded!','tok');
+}
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function saveToLocal(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({results,allEC,allDC,empInfo}));}catch(e){}
+}
+function loadSaved(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(!d?.results?.length){toast('No saved data found','terr');return;}
+    results=d.results;allEC=d.allEC||[];allDC=d.allDC||[];empInfo=d.empInfo||{};
+    renderAll();
+    document.getElementById('dlBtn').disabled=false;document.getElementById('dlCsv').disabled=false;
+    document.getElementById('editBtn').disabled=false;
+    toast(`Loaded ${results.length} saved slips!`,'tok');
+  }catch(e){toast('No saved data','terr');}
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['table','charts','raw'][i]===name));
+  document.querySelectorAll('.tc').forEach(el=>el.classList.toggle('active',el.id==='tc-'+name));
+  if(name==='charts') setTimeout(renderCharts,50);
+  if(name==='raw'){
+    document.getElementById('rawBtns').innerHTML=files.map((f,i)=>`<button class="btn b-ghost" style="font-size:10px;padding:4px 10px" onclick="showRaw(${i})">${f.name.slice(0,18)}</button>`).join('');
+    if(files.length) showRaw(0);
+  }
+}
+function showRaw(i){document.getElementById('rawOut').textContent=rawData[i]||'No raw data for this file.';}
+
+function updateHeader(){
+  document.getElementById('h-slips').textContent=results.length;
+  const tN=results.reduce((s,r)=>s+r.netPay,0);
+  const tT=results.reduce((s,r)=>s+(r.ded['ITAX']||r.ded['TDS']||r.ded['INCOME TAX']||0),0);
+  document.getElementById('h-net').textContent='₹'+fmtL(tN);
+  document.getElementById('h-tax').textContent='₹'+fmtL(tT);
+}
+
+function getFY(){
+  const yrs=new Set();results.forEach(r=>{const m=r.month.match(/\d{4}/);if(m)yrs.add(parseInt(m[0]));});
+  const s=[...yrs].sort();
+  if(s.length>=2)return`FY ${s[0]}-${String(s[s.length-1]).slice(2)}`;
+  if(s.length===1)return`FY ${s[0]}-${String(s[0]+1).slice(2)}`;
+  return'';
+}
+function fmt(v){return v?Number(v).toLocaleString('en-IN'):'-';}
+function fmtL(v){if(!v)return'0';if(v>=100000)return(v/100000).toFixed(1)+'L';if(v>=1000)return(v/1000).toFixed(1)+'K';return String(Math.round(v));}
+function setP(p){document.getElementById('pf').style.width=p+'%';}
+function addLog(msg,type=''){
+  const b=document.getElementById('log');b.style.display='block';
+  b.innerHTML+=`<div${type?` class="${type}"`:''}>&#62; ${msg}</div>`;b.scrollTop=b.scrollHeight;
+}
+function setDot(i,t){
+  const d=document.getElementById('d'+i);if(!d)return;
+  d.className='dot '+{w:'dw',p:'dp',d:'dd',e:'de'}[t];
+  d.innerHTML={w:'&#8226;',p:'&#8230;',d:'&#10003;',e:'&#10007;'}[t];
+}
+function dv(e,on){e.preventDefault();document.getElementById('dz').classList[on?'add':'remove']('drag');}
+function dp(e){e.preventDefault();dv(e,0);addFiles(e.dataTransfer.files);}
+function addFiles(nf){
+  for(const f of nf)if(!files.find(x=>x.name===f.name))files.push(f);
+  renderFiles();document.getElementById('scanBtn').disabled=!files.length;
+}
+function renderFiles(){
+  document.getElementById('fcnt').textContent=files.length;
+  document.getElementById('fsize').textContent=(files.reduce((s,f)=>s+f.size,0)/1024).toFixed(0)+' KB';
+  document.getElementById('fitems').innerHTML=files.length?files.map((f,i)=>`
+    <div class="fi"><div class="dot dw" id="d${i}">&#8226;</div>
+    <span style="flex:1;color:var(--t1)">${f.name}</span>
+    <span style="color:var(--t3);font-size:10px">${(f.size/1024).toFixed(0)}KB</span></div>`).join(''):'<div class="empty" style="padding:14px">Drop PDFs above</div>';
+}
+function clearAll(){
+  files=[];results=[];rawData={};allEC=[];allDC=[];empInfo={};editMode=false;apiCallCount=0;
+  renderFiles();
+  document.getElementById('log').innerHTML='';
+  ['pb','log'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('pf').style.width='0%';
+  document.getElementById('resultsCard').style.display='none';
+  ['dlBtn','dlCsv','editBtn','scanBtn'].forEach(id=>document.getElementById(id).disabled=true);
+  document.getElementById('scanBtn').disabled=true;
+  document.getElementById('fi').value='';
+  document.getElementById('h-slips').textContent='0';document.getElementById('h-net').textContent='—';document.getElementById('h-tax').textContent='—';document.getElementById('h-calls').textContent='0';
+}
+function toast(msg,cls){
+  const t=document.getElementById('toast');t.innerHTML=msg;t.className='toast show '+(cls||'tinfo');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+</script>
+</body>
+</html>
